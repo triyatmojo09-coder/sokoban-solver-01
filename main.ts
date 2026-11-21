@@ -313,30 +313,13 @@ function solveBoard(
 
   // Dead squares: start from the goals and grow by reverse pulls. A square s
   // joins the live set when a box on it could be pushed onto a live square t
-  // while the player can reach the stance s - (t - s) from the start, ignoring
-  // every box but the one on s. Reachability ignoring boxes over-approximates
-  // the real game, so a square never marked live is truly dead.
+  // while the player can stand on the stance s - (t - s): the stance only
+  // needs to be floor. (Requiring the stance to be reachable from the door
+  // would be wrong: the player may already be standing there, left over from
+  // the push that brought the box to s. Reachability is ignored, so a square
+  // never marked live is truly dead, and the pruning stays sound.)
   const live = new Uint8Array(w * h);
   for (const g of goals) live[g] = 1;
-  const reachCache = new Map<number, Uint8Array>();
-  const reachableFromStart = (blocked: number): Uint8Array => {
-    const cached = reachCache.get(blocked);
-    if (cached) return cached;
-    const mask = new Uint8Array(w * h);
-    const queue = [start];
-    mask[start] = 1;
-    for (let qi = 0; qi < queue.length; qi++) {
-      const c = queue[qi];
-      for (let d = 0; d < 4; d++) {
-        const nn = nbr[c * 4 + d];
-        if (nn < 0 || wall[nn] || nn === blocked || mask[nn]) continue;
-        mask[nn] = 1;
-        queue.push(nn);
-      }
-    }
-    reachCache.set(blocked, mask);
-    return mask;
-  };
   let changed = true;
   while (changed) {
     changed = false;
@@ -347,11 +330,9 @@ function solveBoard(
         if (t < 0 || wall[t] || !live[t]) continue;
         const stance = nbr[s * 4 + (d ^ 1)];
         if (stance < 0 || wall[stance]) continue;
-        if (reachableFromStart(s)[stance]) {
-          live[s] = 1;
-          changed = true;
-          break;
-        }
+        live[s] = 1;
+        changed = true;
+        break;
       }
     }
   }
@@ -390,6 +371,10 @@ function solveBoard(
     }
     return false;
   };
+
+  for (const b of startBoxes) {
+    if (frozen2x2(new Set<number>(startBoxes), b)) return null;
+  }
 
   // Heuristic: minimum assignment of boxes to goals by walk distance.
   // Exact Hungarian by permutation for small n; for larger boards the sum of

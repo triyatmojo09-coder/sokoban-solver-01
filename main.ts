@@ -544,7 +544,7 @@ function detectRooms(level: Level): Room[] {
   const rooms: Room[] = [];
   for (let i = 0; i < w * h; i++) {
     if (wall[i] || seen[i]) continue;
-    if ((i / w) | 0 === hallRow) continue;
+    if (((i / w) | 0) === hallRow) continue;
     const cells: number[] = [];
     const stack = [i];
     seen[i] = 1;
@@ -554,7 +554,7 @@ function detectRooms(level: Level): Room[] {
       for (let d = 0; d < 4; d++) {
         const n = nbr[c * 4 + d];
         if (n < 0 || wall[n] || seen[n]) continue;
-        if ((n / w) | 0 === hallRow) continue;
+        if (((n / w) | 0) === hallRow) continue;
         seen[n] = 1;
         stack.push(n);
       }
